@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import threading
 from datetime import datetime
 
 import speech_recognition as sr
@@ -30,9 +31,14 @@ def text_to_speech(request):
         text = data.get('text', '')
         try:
             tts = gTTS(text, lang=current_language)
-            audio_path = os.path.join(settings.BASE_DIR, 'static/audio', 'temp.mp3')
+            
+            # Generate a unique filename using the current timestamp
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            audio_filename = f"audio_{timestamp}.mp3"
+            audio_path = os.path.join(settings.BASE_DIR, 'static/audio', audio_filename)
+            
             tts.save(audio_path)
-            audio_url = settings.STATIC_URL + 'audio/temp.mp3'
+            audio_url = settings.STATIC_URL + f'audio/{audio_filename}'
             
             return JsonResponse({'status': 'Text-to-speech conversion successful', 'audio_url': audio_url})
         except Exception as e:
@@ -40,58 +46,48 @@ def text_to_speech(request):
             return JsonResponse({'error': 'Text-to-speech conversion failed'})
     return JsonResponse({'error': 'Invalid request'})
 
+# handle_post_processing function
+def handle_post_processing(response_text):
+    try:
+        tts = gTTS(text=response_text, lang=current_language)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        audio_filename = f"response_{timestamp}.mp3"
+        audio_path = os.path.join(settings.BASE_DIR, 'static/audio', audio_filename)
+        tts.save(audio_path)
+
+        return audio_filename
+
+    except Exception as e:
+        logger.error(f"Error during post-processing: {e}")
+        return None
+
 @csrf_exempt
 def speech_to_text(request):
     try:
         if request.method == 'POST':
             recognizer = sr.Recognizer()
             with sr.Microphone() as source:
-                print("Listening...")
-                request.session['listening'] = True
-                audio = recognizer.listen(source)
+                recognizer.adjust_for_ambient_noise(source)
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
 
-            try:
-                query_text = recognizer.recognize_google(audio)
-                print(f"Recognized query: {query_text}")
-                
-                # Store user query in text file
-                query_file = os.path.join(settings.BASE_DIR, 'static/text', 'user_queries.txt')
-                with open(query_file, 'a') as file:
-                    file.write(f"{query_text}\n")
-                
-                # Send query Meta AI and get response
-                response_text = send_to_meta_ai(query_text)
-                response = response_text['message']
-                print(f"Meta AI response: {response}")
+            query_text = recognizer.recognize_google(audio)
+            response_text = send_to_meta_ai(query_text)
+            response = response_text['message']
 
-                # Convert response to speech and play
-                try:
-                    tts = gTTS(text=response, lang=current_language)  
-                    audio_path = os.path.join(settings.BASE_DIR, 'static/audio', 'response.mp3')
-                    tts.save(audio_path)
-                    audio_url = settings.STATIC_URL + 'audio/response.mp3'
-                    play(AudioSegment.from_file(audio_path))
-                except Exception as e:
-                    logger.error(f"Error during TTS conversion or playback: {e}")
-                    return JsonResponse({'status': 'error', 'message': str(e)})
+            audio_filename = handle_post_processing(response)
 
-                # Store response in text file
-                response_file = os.path.join(settings.BASE_DIR, 'static/text', 'responses.txt')
-                with open(response_file, 'a') as file:
-                    file.write(f"{response_text}\n")
-
+            if audio_filename:
+                audio_url = settings.STATIC_URL + 'audio/' + audio_filename
                 return JsonResponse({
                     'status': 'success',
                     'query': query_text,
                     'response': response,
                     'audio_url': audio_url
                 })
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Audio processing failed'})
 
-            except Exception as e:
-                logger.error(f"Error during processing: {e}")
-                return JsonResponse({'status': 'error', 'message': str(e)})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
     except Exception as e:
         logger.error(f"Server error: {e}")
         return JsonResponse({'status': 'error', 'message': 'Internal server error'})
