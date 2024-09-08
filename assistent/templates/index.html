@@ -1,0 +1,124 @@
+{% load static %}
+
+<html>
+  <head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+    <title>Speech Assistant</title>
+  </head>
+  <style>
+    body{
+        background-color: black;
+        color: white;
+    }
+  </style>
+  <body>
+    <div class="container">
+      <h1>Speech Assistant</h1>
+
+      <h2>Speech-to-Text</h2>
+      {% csrf_token %}
+    <button onclick="startListening()" class="btn btn-primary">Start Listening</button>
+    <p id="status"></p>
+    <p><strong>Query:</strong> <span id="query"></span></p>
+    <p><strong>Response:</strong> <span id="response"></span></p>
+    <audio id="audioPlayer" controls></audio>
+
+
+      <!-- Text to Speech Section -->
+      <h2>Text to Speech</h2>
+      <textarea class="form-control" name="user_text" id="myTextarea" rows="4" cols="40" placeholder="Enter some text here..."></textarea><br />
+      <button class="btn btn-primary" type="submit" id="gen-speech">Generate Speech</button>
+
+      <h2>Generated Speech:</h2>
+      <audio controls id="gen-Audio">
+        <source src="{% static 'audio/temp.mp3' %}" type="audio/mp3" />Your browser does not support the audio element.
+      </audio>
+    </div>
+
+    <script>
+      const responseAudio = document.getElementById('response-audio')
+      const csrfToken = '{{ csrf_token }}'
+      
+      document.getElementById('gen-speech').addEventListener('click', async () => {
+        // Get the value from the textarea
+        const user_text = document.getElementById('myTextarea').value
+      
+        const response = await fetch('/text_to_speech/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ text: user_text })
+        })
+      
+        if (response.ok) {
+          const data = await response.json()
+          const audioSource = document.querySelector('#gen-Audio source')
+          audioSource.src = data.audio_url
+          const audioElement = document.getElementById('gen-Audio')
+          audioElement.load()
+          audioElement.play()
+        } else {
+          console.error('Failed to generate speech')
+        }
+      })
+
+      {% comment %} function startRecording() {
+        fetch('/speech_to_text/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('response').innerText = data.response;
+            } else {
+                document.getElementById('response').innerText = `Error: ${data.message}`;
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            document.getElementById('response').innerText = 'An error occurred while processing your request.';
+        });
+    } {% endcomment %}
+
+    function startListening() {
+        document.getElementById('status').innerText = 'Listening...';
+        fetch('/speech_to_text/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('status').innerText = '';
+            if (data.status === 'success') {
+                document.getElementById('query').innerText = data.query;
+                document.getElementById('response').innerText = data.response;
+                let audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.src = data.audio_url;
+                audioPlayer.play();
+            } else {
+                document.getElementById('status').innerText = data.message;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('status').innerText = 'Error occurred';
+        });
+    }
+    
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  </body>
+</html>

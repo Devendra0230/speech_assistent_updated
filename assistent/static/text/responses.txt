@@ -1,0 +1,3 @@
+2024-09-06 15:48:18.479676: This is a sample response from Meta AI.
+2024-09-06 15:48:51.452806: This is a sample response from Meta AI.
+{'message': "I'm happy to help! Could you please share your location with me so I can provide you with the weather information for your area?\n", 'sources': [], 'media': []}

@@ -1,0 +1,12 @@
+2024-09-06 15:48:02.212936: hello how r u
+2024-09-06 15:48:46.947994: hey tell me about today weather in Ujjain
+2024-09-06 15:52:23.145157: how r u tell me about today weather in Ujjain
+2024-09-06 15:53:04.078897: hey how are you tell me about today weather
+<class 'datetime.datetime'>: hey how are you tell me about today weather
+<class 'datetime.datetime'>: hey how are you tell me about today weather
+<class 'datetime.datetime'>: hey how are you tell me about
+<class 'datetime.datetime'>: hey how are you tell me about today weather in Ujjain
+how are you tell me about today weather in Ujjain
+hey how are you
+tell me about today weather
+hey tell me about today weather in Ujjain
