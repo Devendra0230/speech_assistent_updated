@@ -14,8 +14,6 @@ from meta_ai_api import MetaAI
 from pydub import AudioSegment
 from pydub.playback import play
 
-from .models import UserQuery
-
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -51,15 +49,13 @@ def text_to_speech(request):
             tts.save(audio_path)
             audio_url = settings.STATIC_URL + f'tts_audio/{audio_filename}'
 
-            return JsonResponse({'status': 'Text-to-speech conversion successful', 'audio_url': audio_url})
+            return JsonResponse({'status': 'Text-to-speech conversion successful', 'audio_url': audio_url, "text": text})
         except Exception as e:
             logger.error(f"Error in text-to-speech conversion: {e}")
             return JsonResponse({'error': 'Text-to-speech conversion failed'})
     return JsonResponse({'error': 'Invalid request'})
 
 # handle post processing function
-
-
 def handle_post_processing(response_text):
     try:
         tts = gTTS(text=response_text, lang=current_language)
@@ -96,6 +92,8 @@ def speech_to_text(request):
             response_text = send_to_meta_ai(query_text)
             response = response_text['message']
 
+            save_text_to_file(response)  # call the save txt to file function
+
             audio_filename = handle_post_processing(response)
 
             if audio_filename:
@@ -125,3 +123,11 @@ def send_to_meta_ai(query_text):
     except Exception as e:
         logger.error(f"Error with Meta AI: {e}")
         return "There was an error. Please try again later."
+
+
+def save_text_to_file(response):
+    output_path = os.path.join(
+        settings.BASE_DIR, 'static/text', 'responses.txt')
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'a', encoding='utf-8') as file:
+        file.write(response + '\n')
