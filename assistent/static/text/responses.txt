@@ -1,6 +1,0 @@
-2024-09-06 15:48:18.479676: This is a sample response from Meta AI.
-2024-09-06 15:48:51.452806: This is a sample response from Meta AI.
-{'message': "I'm happy to help! Could you please share your location with me so I can provide you with the weather information for your area?\n", 'sources': [], 'media': []}
-{'message': "Hello! I'm doing well, thanks for asking! I'm a large language model, so I don't have feelings or emotions like humans do, but I'm always happy to chat with you and help with any questions or topics you'd like to discuss. How about you? How's your day going so far?\n", 'sources': [], 'media': []}
-Today in Maksi, you can expect a high of 96°F and a low of 79°F with moderate UV and wind gusts up to 17mph ¹. There's also a chance of rain, with a total of 0.09 inches expected ¹. Make sure to pack your sunscreen and stay hydrated!
-
